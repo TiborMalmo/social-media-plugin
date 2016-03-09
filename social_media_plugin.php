@@ -52,7 +52,7 @@ class DWWP_social_media_plugin
 
 
         //create new top-level menu
-        add_menu_page('Social-media-plugin', 'Add new feed', 'administrator', 'social-media-new-feed', array(__CLASS__, 'page_add_feed'), do_shortcode('
+        add_menu_page('Social-media-plugin', 'Add new feed', 'administrator', 'social-media-new-feed', array(__CLASS__, 'page_add_instagram_feed'), do_shortcode('
 dashicons-share'));
         add_submenu_page('social-media-new-feed', 'Edit-existing-feed', 'Edit existing feed', 'administrator', __FILE__, array(__CLASS__, 'page_edit_feed'));
 
@@ -72,11 +72,12 @@ function my_menu_pages(){
         //register our settings
         register_setting('settings-group', array(__CLASS__, 'clientID'));
         register_setting('settings-group', array(__CLASS__, 'clientSecret'));
-        register_setting('settings-group', array(__CLASS__, 'igName'));
+        register_setting('settings-group', array(__CLASS__, 'feed_name'));
     }
 
+
     //
-    static function page_add_feed()
+    static function page_add_instagram_feed()
     {
         ?>
 
@@ -86,24 +87,26 @@ function my_menu_pages(){
             <h2>Add new feed</h2>
             <?php
             if (isset($_POST['submit_feed'])) {
+                echo "<pre>".print_r($_POST['tags'], 1)."</pre>";
                 require_once __DIR__ . "/php/instagram-api/api.php";
                 ?>
                 <a href="<?php echo $url ?>" target="_self"><?php _e('Login to get access token') ?></a>
                 <?php
-                if (isset($_GET['code'])) {
-                    echo $_GET['code'];
+                if (isset($_GET['response_type'])) {
+                    echo $_GET['response_type'];
                 }
 
 // deklarerar lokalvariabler som tar information som begärs
                 $clientID = preg_replace('/\s+/', '', $_POST['client_id']);
                 $clientSecret = preg_replace('/\s+/', '', $_POST['client_secret']);
-                $feedname = $_POST['ig_name'];
+                $feedname = $_POST['feed_name'];
                 $option = "instagram_settings";
                 $array = array(
                     'client_id' => $clientID,
                     'client_secret' => $clientSecret,
-                    'ig_name' => $feedname,
-                    'success_token' => $_GET['code']
+                    'feed_name' => $feedname,
+                    'success_token' => $_GET['code'],
+                    'hashtags' => array($_POST['tags'])
                 );
 
                 // serialiserar värdena.
@@ -120,13 +123,15 @@ function my_menu_pages(){
                 <?php
                 $DB = get_option('instagram_settings');
                 ?>
+                <?php if('feedCB' != 'InstagramCB') {?>
                 <table class="form-table">
+
 
                     <!-- deklararerar namnet på själva feeden -->
                     <tr valign="top">
                         <th scope="row"><?php _e('Feed Name:', 'tibor') ?> </th>
                         <td><input type="text" name="feed_name"
-                                   value="<?php echo esc_attr($DB['ig_name']); //get_option('ig_name') );// ?>"/></td>
+                                   value="<?php echo esc_attr($DB['feed_name']); //get_option('ig_name') );// ?>"/></td>
                     </tr>
 
 
@@ -158,10 +163,10 @@ function my_menu_pages(){
 
                     <!-- En combobox som gör att man väljer antingen instagram eller facebook-feed-->
                     <tr valign="top">
-                        <th scope="row"><?php _e('Specify feed:', 'tibor') ?> </th>
+                        <th scope="row"><?php _e('Specify feed: // ta kanske bort iom lägg till i startpage', 'tibor') ?> </th>
                         <td>
-                            <select>
-                                <option value="Instagram">Instagram</option>
+                            <select id = "feedCB">
+                                <option id="InstagramCB" value="Instagram">Instagram</option>
                                 <option value="Facebook">Facebook</option>
                             </select>
                         </td>
@@ -179,7 +184,7 @@ function my_menu_pages(){
         </div>
 
         <br>
-
+    <?php }?>
         <!-- informations-box -->
         <div class="information">
 
@@ -204,10 +209,11 @@ function my_menu_pages(){
             <h4>Specify feeds. </h4>
             <p> You need to specify if it's either a facebook or a instagram feed.</p>
         </div>
+<?php }
 
-        <!--Instagram-apiet som läggs in i filen.-->
-    <?php }
 
+
+    //instagram-feedet som läggs in i systemet.
     static function DWWP_instagram_api()
     {
 
@@ -220,9 +226,10 @@ function my_menu_pages(){
         echo "<a href='{$instagram->getLoginUrl()}'>Login with Instagram</a>";
     }
 
-
+// här börjar settings-delen av pluginen.
     static function page_edit_feed()
-    { ?>
+    {
+        ?>
         <!-- ÄNDRA TEXTEN -->
         <div class="wrap">
         <h2> Edit existing feed </h2>
@@ -230,21 +237,23 @@ function my_menu_pages(){
 <br>
             <h4 id = "rubrik"> Enter the feedname you wish to edit</h4>
            <select id="long">
-            <option>Hej</option>
-
-               <option> Heeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeej</option>
-               <option>Exempelfeed Som ej är länkad</option>
+                <?php function feed_name(){
+                    
+                } ?>
+               <option>Exempelfeed Som ej är länkad 1</option>
+               <option>Exempelfeed Som ej är länkad 2 </option>
+               <option>Exempelfeed Som ej är länkad 3</option>
                </select>
             <hr>
             <br>
             <!--Deklarerar KlientID't från developer-sidan-->
 
-            <h4 id = "rubrik"> If you wish to update the access-token: </h4>
+            <h4 id = "rubrik"> If you wish to update the client-ID: // ändra kanske denna till en till. </h4>
 
 
             <tr valign="top">
                 <th scope="row"></th>
-                <td><input id = "long" name="tags" id="tags"/></td>
+                <td><input name="client_id" id="client_id"/></td>
             </tr>
 
             <br>
@@ -264,9 +273,21 @@ function my_menu_pages(){
             <h4 id = "rubrik">Edit the existing hashtags: </h4>
 
 
+            <?php
+            function ArrayLoop() {
+                $hashtags = get_option('instagram_settings');
+                foreach($hashtags['hashtags'] as $var){
+                echo $var;
+                };
+            }
+
+            ?>
+
+
+
             <tr valign="top">
                 <th scope="row"></th>
-                <td><input id = "long"type="text"/></td>
+                <td><input value="<?php echo ArrayLoop()?> " id ="tags" type="text" name="tags"/></td>
             </tr>
             <br><br>
             <button id="button" onclick="hashtag_update()">Update the hashtags </button>
@@ -285,28 +306,33 @@ function my_menu_pages(){
 
         </div>
         <br>
-        <div class="information">
+        <div class="information2">
 
             <h2 id="info"> Information </h2>
             <hr>
 
 
-            <h4> How to use Client ID and Client Secrets</h4>
+            <h4>Feed-selection:</h4>
             <p>
-                Client ID and Client Secrets <br>
-                you can find the Client ID and Client Secret at the <br>developer page on either Instagram or
-                facebook.<br>
-                Copy these and put these inside the fields.
+
+                You need to choose the feed you want to manipulate  <br>
+                simply select the field you wish to manipulate in the drop-down menu.
             </p>
             <hr>
 
-            <h4> How to use hashtags.</h4>
-            <p> The hashtag-function automatically switch every hashtag to lowercase values. <br>
-                to start declaring a hashtag, write the specific hashtag and end every hashtag with a comma. </p>
+            <h4> Updating the client-id.</h4>
+            <p> If your client id has run out, simply paste in the new client id in the field <br>
+                and press the button.
+                 </p>
             <hr>
 
-            <h4>Specify feeds. </h4>
-            <p> You need to specify if it's either a facebook or a instagram feed.</p>
+            <h4>Edit hashtags. </h4>
+            <p> If you want to edit the hashtags you previously written in, you can easily manipulate them here. simply add
+            or delete the tags you want to manipulate.</p>
+            <hr>
+            <h4>Delete feed. </h4>
+            <p> This will permanently delete the feed from the database. Only press this if you are sure to delete the feed.</p>
+
         </div>
 
     <?php }
