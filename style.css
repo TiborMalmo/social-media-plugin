@@ -31,3 +31,15 @@ float: right;
      float: left;
 
  }
+#rubrik {
+    margin-left: 20px;
+}
+#long {
+    width: 500px;
+
+}
+
+#button {
+    margin-left: 150px;
+}
+

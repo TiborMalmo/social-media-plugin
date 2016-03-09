@@ -15,3 +15,5 @@ jQuery(document).ready(function($){
         .focus(function() { $(this).css("background", "none") })
         .blur(function() { if ($(this)[0].value == '') { $(this).css("background", "url(images/benice.png) center center no-repeat") } });
 });
+
+
