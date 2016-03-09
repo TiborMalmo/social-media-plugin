@@ -7,10 +7,10 @@
 
 
 function update_access_token() {
-    if()
-    alert("Your access-token has been updated. "); }
+    alert("are you sure that you want to update the access-token?");
 
 
+}
 
 function delete_feed() {
     alert("The selected feed has now been deleted")
@@ -19,3 +19,10 @@ function delete_feed() {
 function hashtag_update() {
     alert("The hashtags has now been updated!")
 }
+
+
+
+
+
+
+

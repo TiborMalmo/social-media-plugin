@@ -1,14 +1,16 @@
-
+/*Gör att alla hashtags blir små*/
  div.tagsinput span.tag {
     text-transform: lowercase !important
  ;
 }
+ /*Arbetar med hashtagsen*/
  textarea {
      background: url(images/benice.png) center center no-repeat; /* This ruins default border */
      border: 1px solid #888;
      width: 300px; min-height: 100px; height: 100px;
 
  }
+ /*Informations-rutorna*/
  div.information {
 float: right;
      margin-right: 20px;
@@ -17,6 +19,16 @@ float: right;
 
      padding:0 20px;
      height: 470px;
+     width: 350px;
+ }
+ div.information2 {
+     float: right;
+     margin-right: 20px;
+     border-style: solid;
+     border-color: darkgrey;
+
+     padding:0 20px;
+     height: 550px;
      width: 350px;
  }
 
@@ -42,4 +54,18 @@ float: right;
 #button {
     margin-left: 150px;
 }
+ #longhashtag {
+     width: 500px;
+
+
+ }
+
+ #feedCB {
+     margin-left: 35%;
+     width: 200px;
+ }
+ #specFeedRubrik
+ {
+     margin-left: 25%
+ }
 
