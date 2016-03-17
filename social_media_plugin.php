@@ -73,6 +73,7 @@ function my_menu_pages(){
         register_setting('settings-group', array(__CLASS__, 'clientID'));
         register_setting('settings-group', array(__CLASS__, 'clientSecret'));
         register_setting('settings-group', array(__CLASS__, 'feed_name'));
+        register_setting('settings-group', array(__CLASS__, 'code'));
     }
 
 
@@ -86,11 +87,12 @@ function my_menu_pages(){
 
             <h2>Add new feed</h2>
             <?php
+            DWWP_social_media_plugin::fetch_access_token();
             if (isset($_POST['submit_feed'])) {
-                echo "<pre>".print_r($_POST['tags'], 1)."</pre>";
-                require_once __DIR__ . "/php/instagram-api/api.php";
+                ?> <pre>Saved into the DB!</pre> <?php
+                require_once __DIR__ . "/php/instagram-api/code.php";
                 ?>
-                <a href="<?php echo $url ?>" target="_self"><?php _e('Login to get access token') ?></a>
+                <a href="<?php echo $url ?>" target="_self"><?php _e('fetch instagram code ') ?></a>
                 <?php
                 if (isset($_GET['response_type'])) {
                     echo $_GET['response_type'];
@@ -101,12 +103,14 @@ function my_menu_pages(){
                 $clientSecret = preg_replace('/\s+/', '', $_POST['client_secret']);
                 $feedname = $_POST['feed_name'];
                 $option = "instagram_settings";
+
                 $array = array(
                     'client_id' => $clientID,
                     'client_secret' => $clientSecret,
                     'feed_name' => $feedname,
-                    'success_token' => $_GET['code'],
+                    'code' => $_GET['code'],
                     'hashtags' => array($_POST['tags'])
+
                 );
 
                 // serialiserar värdena.
@@ -114,16 +118,32 @@ function my_menu_pages(){
 
                 update_option($option, $array);
 
+
                 //echo "<pre>".print_r($fetch1['clientSecret'],1)."</pre>";
+
+
+
+  /*              function ArrayLoop() {
+                    $hashtags = get_option('instagram_settings');
+                    foreach($hashtags['hashtags'] as $var){
+                        echo $var;
+                    };
+                }*/
+
             }
             ?>
+
+
+
             <form method="post" action="">
                 <?php settings_fields('settings-group'); ?>
                 <?php do_settings_sections('settings-group'); ?>
                 <?php
                 $DB = get_option('instagram_settings');
+
+                echo "<pre>".print_r($DB,1)."</pre>"
                 ?>
-                <?php if('feedCB' != 'InstagramCB') {?>
+
                 <table class="form-table">
 
 
@@ -156,6 +176,8 @@ function my_menu_pages(){
                     </tr>
 
 
+
+
                     <!--      <tr valign="top">
                               <th scope="row">Options, Etc.</th>
                               <td><input type="text" name="option_etc" value=" /></td>
@@ -184,7 +206,7 @@ function my_menu_pages(){
         </div>
 
         <br>
-    <?php }?>
+        <?php DWWP_social_media_plugin::DWWP_instagram_api(); ?>
         <!-- informations-box -->
         <div class="information">
 
@@ -211,22 +233,134 @@ function my_menu_pages(){
         </div>
 <?php }
 
-
+    static function fetch_access_token() {
+        include('/php/instagram-api/access_token.php');
+        ?>  <?php
+    }
 
     //instagram-feedet som läggs in i systemet.
     static function DWWP_instagram_api()
     {
 
-        $instagram = new Instagram(array(
+      /*  $instagram = new Instagram(array(
             'apiKey' => get_option('clientID'),
             'apiSecret' => get_option('clientSecret'),
             'apiCallback' => get_option('http://tibor.dev/success') // testsida
-        ));
+        )); */
+        if(!empty($_GET['code'])) {
 
-        echo "<a href='{$instagram->getLoginUrl()}'>Login with Instagram</a>";
+            $instagram_settings = get_option('instagram_settings');
+
+        $get_client_id = $instagram_settings['client_id'];
+        $get_client_secret = $instagram_settings['client_secret'];
+        $get_code = $_GET ['code'];
+
+
+            $args = array(
+                'body' => array(
+                    'client_id' => $get_client_id,
+                    'client_secret' => $get_client_secret,
+                    'code' => $_GET['code'],
+                    'grant_type' => 'authorization_code',
+                    'redirect_uri' => 'http://tibor.dev/wp-admin/admin.php?page=social-media-new-feed'
+                )
+            );
+            $url = 'https://api.instagram.com/oauth/access_token';
+            $response = wp_remote_post($url, $args);
+            //echo '<p>'.$url.'</p>';
+
+            if(wp_remote_retrieve_response_code($response) === 200) {
+                $body = wp_remote_retrieve_body($response);
+                $body = json_decode($body);
+                if(!empty($body->access_token)){
+                    update_option('instagram-access-token', $body->access_token);
+                }
+
+            }
+
+            ?><p>Access-token fetched and saved in the db! <?php DWWP_social_media_plugin::get_json() ?></p> <?php
+            //echo '<pre>' . print_r($response, true) . '</pre>';
+            //echo '<a href="'.$url.'">Access Token</a>';
+
+        }
+
+
+
+           // echo "<a href='{$instagram->getLoginUrl()}'>Login with Instagram</a>";
+
     }
 
-// här börjar settings-delen av pluginen.
+
+
+static function get_json()
+{
+    $access_token = get_option('instagram-access-token');
+    $get_json_text_ig = 'https://api.instagram.com/v1/users/self/media/recent/?access_token=' . $access_token;
+    $list_of_json_stuff = file_get_contents($get_json_text_ig);
+    $get_json_text_ig_decoded = json_decode($list_of_json_stuff, true);
+
+
+
+    foreach($get_json_text_ig_decoded as $value) {
+       foreach($value as $instagramInfo){
+        $caption = $instagramInfo ['caption']['text'];
+        $date = $instagramInfo['created_time'];
+            $realdate= date('d/m/Y', $date);
+        $checkup = $instagramInfo['type'];
+        $img_url = $instagramInfo['images']['standard_resolution']['url'];
+           $video_url = $instagramInfo['videos']['standard_resolution']['url'];
+       /*    echo "<pre>".print_r($instagramInfo, 1). "</pre>";*/
+
+           if($checkup === 'video')
+           {
+               if( $caption != null) {
+
+               $videoSetting[] = array(
+                   'url' => $video_url,
+                   'realdate' => $realdate,
+                   'caption' => $caption,
+
+               );}
+
+               else {
+                   $videoSetting[] = array(
+                       'url' => $video_url,
+                       'realdate' => $realdate,
+                   );
+               }
+
+           }
+           elseif($checkup === 'image'){
+
+                if($caption != null) {
+
+
+               $imageSetting[] = array(
+                   'url' => $img_url,
+                   'realdate' => $realdate,
+                   'caption' => $caption
+               );}
+
+               else {
+                   $imageSetting[] = array(
+                       'url' => $img_url,
+                       'realdate' => $realdate,
+                   );
+               }
+           }
+
+
+       }
+
+    } //här slutar loop.
+    echo "<pre>".print_r($imageSetting, 1). "</pre>";
+    echo "<pre>".print_r($videoSetting, 1). "</pre>";
+}
+
+
+
+    // här börjar settings-delen av pluginen.a
+
     static function page_edit_feed()
     {
         ?>
@@ -236,13 +370,24 @@ function my_menu_pages(){
 
 <br>
             <h4 id = "rubrik"> Enter the feedname you wish to edit</h4>
+
+            <?php
+            function feed_name(){
+                $feed_name = get_option($_POST['feed_name']);
+                {
+                    echo $feed_name;
+                }; } ?>
+
+          <p>  <?php feed_name() ?> </p>
+
            <select id="long">
-                <?php function feed_name(){
-                    
-                } ?>
-               <option>Exempelfeed Som ej är länkad 1</option>
+               <option value="<?php echo feed_name() ?>"> </option>
+
+
+
+               <!--<option>Exempelfeed Som ej är länkad 1</option>
                <option>Exempelfeed Som ej är länkad 2 </option>
-               <option>Exempelfeed Som ej är länkad 3</option>
+               <option>Exempelfeed Som ej är länkad 3</option>-->
                </select>
             <hr>
             <br>
