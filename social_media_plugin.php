@@ -141,7 +141,7 @@ function my_menu_pages(){
                 <?php
                 $DB = get_option('instagram_settings');
 
-                echo "<pre>".print_r($DB,1)."</pre>"
+//                echo "<pre>".print_r($DB,1)."</pre>"
                 ?>
 
                 <table class="form-table">
@@ -291,6 +291,7 @@ function my_menu_pages(){
     }
 
 
+    // hämtar hem jsontext från webbklienten
 
 static function get_json()
 {
@@ -353,13 +354,44 @@ static function get_json()
        }
 
     } //här slutar loop.
-    echo "<pre>".print_r($imageSetting, 1). "</pre>";
-    echo "<pre>".print_r($videoSetting, 1). "</pre>";
+
+
+    $instagramResults = "Instagram_results";
+
+
+
+
+
+ //   $igPictureJson = Json_encode($videoSetting, JSON_PRETTY_PRINT);
+
+
+    $igArrays = array_merge($imageSetting, $videoSetting);
+
+    usort($igArrays, function($a, $b) {
+        return $b['realdate'] - $a['realdate'];
+    });
+
+
+   // serialize($igArrays);
+
+    update_option($instagramResults, $igArrays );
+
+
+
+
+    echo "<pre>".print_r( json_encode($igArrays) ). "</pre>";
+   // echo "<pre>".print_r($videoSetting, 1). "</pre>";
 }
 
 
 
+
+
+
     // här börjar settings-delen av pluginen.a
+
+
+
 
     static function page_edit_feed()
     {
