@@ -18,7 +18,7 @@ float: right;
      border-color: darkgrey;
 
      padding:0 20px;
-     height: 470px;
+     height: 500px;
      width: 350px;
  }
  div.information2 {
@@ -32,6 +32,9 @@ float: right;
      width: 350px;
  }
 
+h2.testar {
+    margin-left: 400px;
+}
 
  #info {
     margin-left: 20px;
@@ -64,8 +67,24 @@ float: right;
      margin-left: 35%;
      width: 200px;
  }
- #specFeedRubrik
- {
+ #specFeedRubrik {
      margin-left: 25%
  }
+
+
+#welcomemenu {
+    float: left;
+    margin-left: 20px;
+
+    border-style: hidden;
+    border-color: none;
+
+    padding:0 20px;
+    height: 470px;
+    width: 500px;
+}
+
+#feed-welcome-rubrik {
+    margin-left: 25%
+}
 
