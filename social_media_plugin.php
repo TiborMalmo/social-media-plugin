@@ -26,9 +26,12 @@ class DWWP_social_media_plugin {
 		//add_shortcode('WP_media_shortcode', array(__CLASS__, 'WP_media_shortcode'));
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_repository' ) );
 		// connects the fb api
-		add_action ('admin_enqueue_scripts', array(__CLASS__, 'add_fb_connection'));
+
 		add_action('admin_enqueue_scripts', array(__CLASS__, 'style'));
 
+		add_action( 'init', array( __CLASS__, 'myStartSession' ), 1 );
+		add_action( 'wp_logout', array( __CLASS__, 'myEndSession' ) );
+		add_action( 'wp_login', array( __CLASS__, 'myEndSession' ) );
 
 
 	}
@@ -41,9 +44,7 @@ class DWWP_social_media_plugin {
 		wp_enqueue_script( 'repository', plugin_dir_url( __FILE__ ) . '/js/repository.js' );
 	}
 
-	static function add_fb_connection() {
-		wp_enqueue_script('facebook-api', plugin_dir_url(__FILE__) . '/fb/facebook-api.js');
-	}
+
 	// declares the plugin-menu and submenus.
 	static function create_plugin_menu() {
 
@@ -81,6 +82,18 @@ dashicons-share' ) );
 		register_setting( 'settings-group', array( __CLASS__, 'code' ) );
 	}
 
+	static function myStartSession() {
+		if ( ! session_id() ) {
+			session_start();
+		}
+	}
+
+
+	static function myEndSession() {
+		session_destroy();
+	}
+
+
 	//start-page.
 static function feeds_page() { ?>
 
@@ -102,11 +115,11 @@ static function feeds_page() { ?>
 <div id= "welcomemenu">
 	<h3 id ="feed-welcome-rubrik"> Facebook feeds. </h3>
 
-	<p> difdsjfiodsfiodsjfidsofjdiafdsjiofådsaifsdoiåafjiådsfåsdf</p>
+	<p> will change when included</p>
 	<h4> Add new Facebook feed.</h4>
-	<p> fbdsjifodsjfiosdjfiosdjfiosdjfosidjfisdjfiosdfjiosdfiodsjiofsdjaifjisdaofjådsafjidsoaåf</p>
+	<p> will change when included</p>
 	<h4> Edit a Facebook-feed</h4>
-	<p> fiodsfjisdfjiosdfjsidofjsdoifjasiofdsiofdsiojfjsdfisodajfidsjiofsdijfsdjiooi</p>
+	<p> will change when included</p>
 
 	<div >
 
@@ -229,10 +242,6 @@ static function feeds_page() { ?>
 			<hr>
 
 
-			<h4> How to use hashtags.</h4>
-			<p> The hashtag-function automatically switch every hashtag to lowercase values. <br>
-				to start declaring a hashtag, write the specific hashtag and end every hashtag with a comma. </p>
-			<hr>
 
 			<h4>Specify feeds. </h4>
 			<p> You need to specify if it's either a facebook or a instagram feed.</p>
@@ -244,29 +253,35 @@ static function feeds_page() { ?>
 		?><?php
 	}
 
-	//instagram-feedet som läggs in i systemet.
+	//instagram-feed thats added in the system.
 	static function DWWP_instagram_api() {
 
-
+		// if the response code from instagram is accessable, start the method
 		if ( ! empty( $_GET['code'] ) ) {
 
+			// get the database table 'instagram settings'
 			$instagram_settings = get_option( 'instagram_settings' );
-
+			// get the returned client id.
 			$get_client_id     = $instagram_settings['client_id'];
+			// get the returned client secret.
 			$get_client_secret = $instagram_settings['client_secret'];
+			// code used in the code.php file.
 			$get_code          = $_GET ['code'];
 
-
+		// array that saves the values that are returned.
 			$args     = array(
 				'body' => array(
 					'client_id'     => $get_client_id,
 					'client_secret' => $get_client_secret,
 					'code'          => $_GET['code'],
+					//grant type responds with the instagram scope.
 					'grant_type'    => 'authorization_code',
 					'redirect_uri'  => 'http://tibor.dev/wp-admin/admin.php?page=social-media-instagram-feed'
 				)
 			);
+			// specifies how to get the access-token.
 			$url      = 'https://api.instagram.com/oauth/access_token';
+			// takes the array and posts it in the url.
 			$response = wp_remote_post( $url, $args );
 
 
@@ -279,7 +294,7 @@ static function feeds_page() { ?>
 
 			}
 
-			?><p>Access-token fetched and saved in the db! <?php DWWP_social_media_plugin::get_json() ?></p> <?php
+			?><p>Access-token fetched and saved in the db! <?php DWWP_social_media_plugin::get_json_IG() ?></p> <?php
 
 
 		}
@@ -290,7 +305,7 @@ static function feeds_page() { ?>
 
 	// hämtar hem jsontext från webbklienten
 
-	static function get_json() {
+	static function get_json_IG() {
 		$access_token             = get_option( 'instagram-access-token' );
 		$get_json_text_ig         = 'https://api.instagram.com/v1/users/self/media/recent/?access_token=' . $access_token;
 		$list_of_json_stuff       = file_get_contents( $get_json_text_ig );
@@ -379,8 +394,12 @@ static function feeds_page() { ?>
 			<h4 id="rubrik"> Enter the feedname you wish to edit</h4>
 
 			<?php
-
 			$testar = get_option( 'instagram_settings' );
+			foreach ($testar as $X)
+			{
+				?> <p> <?php echo $X ?> </p> <?php
+			}
+
 
 
 			?>
@@ -394,7 +413,7 @@ static function feeds_page() { ?>
 			<br>
 			<!--Deklarerar KlientID't från developer-sidan-->
 
-			<h4 id="rubrik"> If you wish to update the client-ID: // ändra kanske denna till en till. </h4>
+			<h4 id="rubrik"> If you wish to update the client-ID: </h4>
 
 
 			<tr valign="top">
@@ -406,7 +425,7 @@ static function feeds_page() { ?>
 			<br>
 
 
-			<button id="button" onclick="update_access_token()">Update access-token</button>
+			<button id="button" onclick="update_access_token()">Update client-id</button>
 
 
 			<br><br>
@@ -451,11 +470,7 @@ static function feeds_page() { ?>
 			</p>
 			<hr>
 
-			<h4>Edit hashtags. </h4>
-			<p> If you want to edit the hashtags you previously written in, you can easily manipulate them here. simply
-				add
-				or delete the tags you want to manipulate.</p>
-			<hr>
+
 
 
 
@@ -473,15 +488,127 @@ static function feeds_page() { ?>
 
 	static function page_facebook_feed() {
 
-		?> <h2 id = "welcomerubrik"> Authorize your facebook</h2>
+		?> <!--<h2 id = "welcomerubrik"> Authorize your facebook</h2>
 
 		<hr><br><br><br>
 
-		<fb:login-button id="loginbutton" scope="public_profile,manage_pages" onlogin="checkLoginState();" autologoutlink="true">
-		</fb:login-button>
+		<fb:login-button id="loginbutton" scope="public_profile, manage_pages" onlogin="checkLoginState();" autologoutlink="true">
+		</fb:login-button> -->
+<?php
 
-		<div id="status">
-		</div>
+		include_once __DIR__ . '/facebook-php-sdk-v4-master/src/Facebook/autoload.php';
+
+		$facebook_app_id     = '991325357570427';
+		$facebook_app_secret = 'bf44bc157329b55c4914f327498a1968';
+		$url                 = ( ! empty( $_SERVER['HTTPS'] ) ) ? 'https://' . $_SERVER['HTTP_HOST'] : 'http://' . $_SERVER['HTTP_HOST'];
+
+		$fb = new Facebook\Facebook( [
+			'app_id'                => $facebook_app_id,
+			'app_secret'            => $facebook_app_secret,
+			'default_graph_version' => 'v2.5',
+		] );
+
+		if ( get_option('facebook-access-token') ) {
+
+			if ( empty( $_GET['page-id'] ) ) {
+				die( '<p>Facebook access-token is now in the database</p>' );
+
+			} elseif ( $_GET['page-id'] ) {
+
+				?> <pre> <?php
+
+			// Facebook is authenticated, get required feed.
+			$pageID      = $_GET['page-id'];
+			$accessToken = get_option( 'facebook-access-token' );
+			$response    = $fb->get( '/' . $pageID . '/feed?fields=message,created_time,attachments,link,comments.limit(1).summary(true),likes.limit(1).summary(true)', $accessToken );
+
+			if ( 200 === $response->getHttpStatusCode() ) {
+			$jsonfacebook = json_decode( $response->getBody(), true);
+				foreach ($jsonfacebook as $value) {
+
+
+					foreach ( $value as $item ) {
+						$picturearray = null;
+						$photopath = $item['attachments']['data'][0];
+						if ( isset( $photopath['subattachments'] ) ) {
+							$photopath = $photopath['subattachments']['data'];
+						} elseif ( isset( $photopath['media'] ) ) {
+							$photopath = $item['attachments']['data'];
+						} else {
+							$photopath = null;
+						}
+
+						if ( $photopath != null ) {
+							foreach ( $photopath as $picture ) {
+								$picturearray[] = $picture['media']['image']['src'];
+							}
+						}
+						else
+						{
+							$picturearray = null;
+						}
+						echo '<pre>' . print_r( $photopath, 1 ) . '</pre>';
+					//	echo '<pre>' . print_r( $item, 1 ) . '</pre>';
+							if ( $item['message'] == 'h' ) {
+								break;
+							}
+							$array[] = array(
+								'message' => $item['message'],
+								'date'    => $item['created_time'],
+								'link'    => $item['link'],
+								'photos'  => $picturearray
+							);
+
+
+					}
+				}
+				update_option('facebook-json-result', $array);
+				foreach(get_option('facebook-json-result') as $x)
+				{
+				echo print_r($x, 1);
+			}
+				die('The end');
+			}
+
+	?> </pre> <?php
+			die();
+		}
+		} elseif ( ! empty( $_GET['code'] ) ) {
+
+			// Get Facebook Token
+			$helper = $fb->getRedirectLoginHelper();
+			try {
+				$accessToken = $helper->getAccessToken();
+				//update_option('facebook-access-token', $accessToken);
+			} catch ( Facebook\Exceptions\FacebookResponseException $e ) {
+				// When Graph returns an error
+				echo '<p>Graph returned an error: ' . $e->getMessage() . '</p>';
+				exit;
+			} catch ( Facebook\Exceptions\FacebookSDKException $e ) {
+				// When validation fails or other local issues
+				echo '<p>Facebook SDK returned an error: ' . $e->getMessage() . '</p>';
+				exit;
+			}
+
+
+
+			if ( isset( $accessToken ) ) {
+				// Logged in!
+				update_option('facebook-access-token',  $accessToken->getValue());
+
+				echo '<p>Facebook is now authenticated!</p>';
+			}
+
+		} elseif ( !get_option('facebook-access-token') ) {
+			$helper      = $fb->getRedirectLoginHelper();
+			$permissions = [ ]; // optional
+			$loginUrl    = $helper->getLoginUrl( $url . '/wp-admin/admin.php?page=facebook-feed-login', $permissions );
+
+			echo '<a href="' . $loginUrl . '">Authenticate Facebook</a>';
+
+		}
+?>
+
 
 
 
