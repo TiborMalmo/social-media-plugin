@@ -33,7 +33,17 @@ class DWWP_social_media_plugin {
 		add_action( 'wp_logout', array( __CLASS__, 'myEndSession' ) );
 		add_action( 'wp_login', array( __CLASS__, 'myEndSession' ) );
 
+		add_action('admin_init', array(__CLASS__, 'redirect_facebook'));
 
+	}
+
+	static function redirect_facebook() {
+		if(isset($_POST['submit'])){
+
+			update_option('page-id', $_POST['page-id']);
+			wp_redirect(  'http://tibor.dev/wp-admin/admin.php?page=facebook-feed-login&page-id=' . get_option('page-id') );
+			exit;
+		}
 	}
 
 	static function style(){
@@ -394,8 +404,8 @@ static function feeds_page() { ?>
 			<h4 id="rubrik"> Enter the feedname you wish to edit</h4>
 
 			<?php
-			$testar = get_option( 'instagram_settings' );
-			foreach ($testar as $X)
+			$value = get_option( 'instagram_settings' );
+			foreach ($value as $X)
 			{
 				?> <p> <?php echo $X ?> </p> <?php
 			}
@@ -405,7 +415,7 @@ static function feeds_page() { ?>
 			?>
 
 			<select id="long">
-				<option> <?php echo $testar['feed_name'] ?> </option>
+				<option> <?php echo $value['feed_name'] ?> </option>
 
 
 			</select>
@@ -487,14 +497,26 @@ static function feeds_page() { ?>
 	<?php }
 
 	static function page_facebook_feed() {
+		/**
+		 * This is where facebook starts.
+		 *
+		 */
+		?>
+		<?php if(isset($_POST['submit'])){
 
-		?> <!--<h2 id = "welcomerubrik"> Authorize your facebook</h2>
+			update_option('page-id', $_POST['page-id']);
+			wp_redirect(  'http://tibor.dev/wp-admin/admin.php?page=facebook-feed-login&page-id=' . get_option('page-id') );
+			exit;
+		} ?>
 
-		<hr><br><br><br>
+		<h2> Authenticate facebook and enter page id. </h2>
 
-		<fb:login-button id="loginbutton" scope="public_profile, manage_pages" onlogin="checkLoginState();" autologoutlink="true">
-		</fb:login-button> -->
+		<h4> After you authenticate your facebook, please enter the page id. </h4>
+
+
 <?php
+
+
 
 		include_once __DIR__ . '/facebook-php-sdk-v4-master/src/Facebook/autoload.php';
 
@@ -515,64 +537,67 @@ static function feeds_page() { ?>
 
 			} elseif ( $_GET['page-id'] ) {
 
-				?> <pre> <?php
 
 			// Facebook is authenticated, get required feed.
-			$pageID      = $_GET['page-id'];
-			$accessToken = get_option( 'facebook-access-token' );
-			$response    = $fb->get( '/' . $pageID . '/feed?fields=message,created_time,attachments,link,comments.limit(1).summary(true),likes.limit(1).summary(true)', $accessToken );
-
-			if ( 200 === $response->getHttpStatusCode() ) {
-			$jsonfacebook = json_decode( $response->getBody(), true);
-				foreach ($jsonfacebook as $value) {
 
 
-					foreach ( $value as $item ) {
-						$picturearray = null;
-						$photopath = $item['attachments']['data'][0];
-						if ( isset( $photopath['subattachments'] ) ) {
-							$photopath = $photopath['subattachments']['data'];
-						} elseif ( isset( $photopath['media'] ) ) {
-							$photopath = $item['attachments']['data'];
-						} else {
-							$photopath = null;
-						}
+						$pageID      = $_GET['page-id'];
+						$accessToken = get_option( 'facebook-access-token' );
+						$response    = $fb->get( '/' . $pageID . '/feed?fields=message,created_time,attachments,link,comments.limit(1).summary(true),likes.limit(1).summary(true)', $accessToken );
 
-						if ( $photopath != null ) {
-							foreach ( $photopath as $picture ) {
-								$picturearray[] = $picture['media']['image']['src'];
+						if ( 200 === $response->getHttpStatusCode() ) {
+							$jsonfacebook = json_decode( $response->getBody(), true );
+							foreach ( $jsonfacebook as $value ) {
+
+
+								foreach ( $value as $item ) {
+									$picturearray = null;
+									$photopath    = $item['attachments']['data'][0];
+									if ( isset( $photopath['subattachments'] ) ) {
+										$photopath = $photopath['subattachments']['data'];
+									} elseif ( isset( $photopath['media'] ) ) {
+										$photopath = $item['attachments']['data'];
+									} else {
+										$photopath = null;
+									}
+
+									if ( $photopath != null ) {
+										foreach ( $photopath as $picture ) {
+											$picturearray[] = $picture['media']['image']['src'];
+										}
+									} else {
+										$picturearray = null;
+									}
+									echo '<pre>' . print_r( $photopath, 1 ) . '</pre>';
+									//	echo '<pre>' . print_r( $item, 1 ) . '</pre>';
+									if ( $item['message'] == 'h' ) {
+										break;
+									}
+									$FBarray[] = array(
+										'message' => $item['message'],
+										'date'    => $item['created_time'],
+										'link'    => $item['link'],
+										'photos'  => $picturearray
+
+
+									);
+
+
+								}
 							}
-						}
-						else
-						{
-							$picturearray = null;
-						}
-						echo '<pre>' . print_r( $photopath, 1 ) . '</pre>';
-					//	echo '<pre>' . print_r( $item, 1 ) . '</pre>';
-							if ( $item['message'] == 'h' ) {
-								break;
+							/*usort( $FBarray, function ( $a, $b ) {
+								return $a['date'] - $b['date'];
+							} );*/
+							update_option( 'facebook-json-result', $FBarray );
+							foreach ( get_option( 'facebook-json-result' ) as $x ) {
+								echo print_r( $x, 1 );
 							}
-							$array[] = array(
-								'message' => $item['message'],
-								'date'    => $item['created_time'],
-								'link'    => $item['link'],
-								'photos'  => $picturearray
-							);
-
-
-					}
+							die( 'The end' );
+						}
 				}
-				update_option('facebook-json-result', $array);
-				foreach(get_option('facebook-json-result') as $x)
-				{
-				echo print_r($x, 1);
-			}
-				die('The end');
-			}
 
-	?> </pre> <?php
-			die();
-		}
+
+
 		} elseif ( ! empty( $_GET['code'] ) ) {
 
 			// Get Facebook Token
@@ -592,21 +617,38 @@ static function feeds_page() { ?>
 
 
 
-			if ( isset( $accessToken ) ) {
+			if ( isset( $accessToken ) && $_GET['status']=== 'approved' ) {
 				// Logged in!
 				update_option('facebook-access-token',  $accessToken->getValue());
 
 				echo '<p>Facebook is now authenticated!</p>';
+
+				?>
+				<form action="" method="post">
+					Page-id: <input type="text" name="page-id"><br>
+
+					<input type="submit" name="submit">
+
+				</form>
+				<?php
+			}
+
+			else {
+				echo '<p> this ID is not valid</p>';
 			}
 
 		} elseif ( !get_option('facebook-access-token') ) {
 			$helper      = $fb->getRedirectLoginHelper();
 			$permissions = [ ]; // optional
-			$loginUrl    = $helper->getLoginUrl( $url . '/wp-admin/admin.php?page=facebook-feed-login', $permissions );
+			$loginUrl    = $helper->getLoginUrl( $url . '/wp-admin/admin.php?page=facebook-feed-login&status=approved', $permissions );
 
 			echo '<a href="' . $loginUrl . '">Authenticate Facebook</a>';
 
 		}
+
+
+
+
 ?>
 
 
