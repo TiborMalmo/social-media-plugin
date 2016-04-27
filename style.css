@@ -28,7 +28,7 @@ float: right;
      border-color: darkgrey;
 
      padding:0 20px;
-     height: 550px;
+     height: 600px;
      width: 350px;
  }
 
@@ -85,6 +85,9 @@ h2.testar {
 }
 
 #feed-welcome-rubrik {
-    margin-left: 25%
+    margin-left: 25%;
 }
 
+#underline {
+    text-decoration: underline;
+}

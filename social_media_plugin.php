@@ -20,11 +20,10 @@ class DWWP_social_media_plugin {
 		add_action( 'admin_menu', array( __CLASS__, 'create_plugin_menu' ) );
 		// registers the feed settings.
 		add_action( 'admin_init', array( __CLASS__, 'register_feed_settings' ) );
-		// registers the hahstag-separator.
-		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_hashtag_separator' ) );
-		//add_action('admin_menu', array(__CLASS__, 'create_submenu'));
-		//add_shortcode('WP_media_shortcode', array(__CLASS__, 'WP_media_shortcode'));
-		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_repository' ) );
+
+
+
+		//add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_repository' ) );
 		// connects the fb api
 
 		add_action('admin_enqueue_scripts', array(__CLASS__, 'style'));
@@ -37,11 +36,13 @@ class DWWP_social_media_plugin {
 
 	}
 
+	// redirects a facebook-page.
 	static function redirect_facebook() {
 		if(isset($_POST['submit'])){
 
 			update_option('page-id', $_POST['page-id']);
 			wp_redirect(  'http://tibor.dev/wp-admin/admin.php?page=facebook-feed-login&page-id=' . get_option('page-id') );
+
 			exit;
 		}
 	}
@@ -74,7 +75,7 @@ dashicons-share' ) );
 			__CLASS__, 'page_edit_feed')
 		);
 
-		// varför funkar denna inte?
+
 		add_submenu_page ('social-media-feeds', 'Facebook-feed-login', 'Facebook feed login', 'administrator', 'facebook-feed-login', array (
 			__CLASS__, 'page_facebook_feed'
 
@@ -83,7 +84,7 @@ dashicons-share' ) );
 	}
 
 
-// registers the feed.
+// registers the feed in instagram.
 	static function register_feed_settings() {
 		//register our settings
 		register_setting( 'settings-group', array( __CLASS__, 'clientID' ) );
@@ -125,7 +126,7 @@ static function feeds_page() { ?>
 <div id= "welcomemenu">
 	<h3 id ="feed-welcome-rubrik"> Facebook feeds. </h3>
 
-	<p> will change when included</p>
+	<p> like the instagram json-feed, the ...</p>
 	<h4> Add new Facebook feed.</h4>
 	<p> will change when included</p>
 	<h4> Edit a Facebook-feed</h4>
@@ -332,6 +333,8 @@ static function feeds_page() { ?>
 				$video_url = $instagramInfo['videos']['standard_resolution']['url'];
 
 
+				 // instagram checkup on values.
+
 				if ( $checkup === 'video' ) {
 					if ( $caption != null ) {
 
@@ -391,7 +394,7 @@ static function feeds_page() { ?>
 	}
 
 
-	// här börjar settings-delen av pluginen.
+	// settings-area of the plugin.
 
 
 	static function page_edit_feed() {
@@ -448,16 +451,25 @@ static function feeds_page() { ?>
 
 
 			<!--Ta bort en feed-->
-			<h4 id="rubrik">Delete selected feed? </h4>
+			<h4 id="rubrik">Delete facebook-JSON-feed? </h4>
 
-			<button id="button" onclick="delete_feed()">Delete the feed</button>
+			<form action="" method="post">
+				
+			<button id="facebookdeletebutton">Delete facebook-feed</button>
+		</form>
+			<?php if(isset($_GET["facebookdeletebutton"]))
+			{
+				delete_option('page-id'); delete_option('facebook-json-result'); delete_option('facebook-access-token');
+
+			echo 'deleted!';
+			} ?>
 
 			<br><br>
 
 
 		</div>
 		<br>
-		<div class="information2">
+		<div class="information">
 
 			<h2 id="info"> Information </h2>
 			<hr>
@@ -501,7 +513,30 @@ static function feeds_page() { ?>
 		 * This is where facebook starts.
 		 *
 		 */
-		?>
+		?><br>
+
+<div class="information2">
+	<h2 id="info"> Information </h2>
+	<hr>
+	<h4> how the facebook JSON-feed works:</h4>
+	<p>To use this and convert it to JSON-text, you need to be an administrator of a facebook-page to get the feed.
+	first of all, you need to press the link that says "authenticate facebook".
+	After you've authenticated your facebook to the plugin, a text-field should appear that requires you to enter a page-id which is found<br>
+		in the page settings. Copy the ID and press the submit button. After that, the json-feed should be saved in the database. </p>
+
+	<h4> Database tables:</h4>
+	<p> The information specified and given is saved on a local database with the tablenames:
+	<p id = "underline"> facebook-access-token:</p> in which the access token given from facebook is stored.
+	<p id = "underline">page-id:</p> the id in which was specified in the text field.
+	<p id= "underline">facebook-JSON-result:</p> the result and converted values from the facebook feed.
+
+
+
+	</p>
+</div>
+
+	<div class="wrap">
+
 		<?php if(isset($_POST['submit'])){
 
 			update_option('page-id', $_POST['page-id']);
@@ -513,10 +548,31 @@ static function feeds_page() { ?>
 
 		<h4> After you authenticate your facebook, please enter the page id. </h4>
 
+		<!-- some validation -->
+		<b>Database status:</b>
+		<p>Database status - JSON: <?php if( get_option('facebook-json-result') == true){
+				echo 'The JSON-result is now in the database!';
+			}
+			else{
+				echo 'JSON-data not inserted in the database...yet.';
+			}?></p>
+		<p> Database status - Access-token: <?php if(get_option('facebook-access-token') == true){
+				echo 'the access-token is now in the database!';
+			}
+			else {
+				echo 'The access-token is not in the database...yet.';
+			}?> </p>
+		<p> Database status - Page ID: <?php if(get_option('page-id') == true) {
+			echo 'the Page-ID is now in the database!';
+			}
+			else{
+				echo 'The Page-ID is not in the database..yet.';
+			}
+			 ?></p>
 
-<?php
+		<?php
 
-
+			// works with the facebook-page.
 
 		include_once __DIR__ . '/facebook-php-sdk-v4-master/src/Facebook/autoload.php';
 
@@ -533,7 +589,7 @@ static function feeds_page() { ?>
 		if ( get_option('facebook-access-token') ) {
 
 			if ( empty( $_GET['page-id'] ) ) {
-				die( '<p>Facebook access-token is now in the database</p>' );
+				die();
 
 			} elseif ( $_GET['page-id'] ) {
 
@@ -568,8 +624,8 @@ static function feeds_page() { ?>
 									} else {
 										$picturearray = null;
 									}
-									echo '<pre>' . print_r( $photopath, 1 ) . '</pre>';
-									//	echo '<pre>' . print_r( $item, 1 ) . '</pre>';
+
+
 									if ( $item['message'] == 'h' ) {
 										break;
 									}
@@ -585,14 +641,10 @@ static function feeds_page() { ?>
 
 								}
 							}
-							/*usort( $FBarray, function ( $a, $b ) {
-								return $a['date'] - $b['date'];
-							} );*/
+
 							update_option( 'facebook-json-result', $FBarray );
-							foreach ( get_option( 'facebook-json-result' ) as $x ) {
-								echo print_r( $x, 1 );
-							}
-							die( 'The end' );
+
+							die();
 						}
 				}
 
@@ -621,11 +673,11 @@ static function feeds_page() { ?>
 				// Logged in!
 				update_option('facebook-access-token',  $accessToken->getValue());
 
-				echo '<p>Facebook is now authenticated!</p>';
+				echo '<p>Facebook has responded!</p>';
 
 				?>
 				<form action="" method="post">
-					Page-id: <input type="text" name="page-id"><br>
+					please enter the Page-ID: <input type="text" name="page-id"><br>
 
 					<input type="submit" name="submit">
 
@@ -633,9 +685,6 @@ static function feeds_page() { ?>
 				<?php
 			}
 
-			else {
-				echo '<p> this ID is not valid</p>';
-			}
 
 		} elseif ( !get_option('facebook-access-token') ) {
 			$helper      = $fb->getRedirectLoginHelper();
@@ -649,12 +698,9 @@ static function feeds_page() { ?>
 
 
 
-?>
 
 
 
-
-		<?php
 
 
 
@@ -662,6 +708,7 @@ static function feeds_page() { ?>
 
 
 }
+?> </div>  <?php
 
 
 DWWP_social_media_plugin::init();
