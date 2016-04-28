@@ -38,7 +38,7 @@ class DWWP_social_media_plugin {
 
 	// redirects a facebook-page.
 	static function redirect_facebook() {
-		if(isset($_POST['submit'])){
+		if(isset($_POST['facebookJSONsubmit'])){
 
 			update_option('page-id', $_POST['page-id']);
 			wp_redirect(  'http://tibor.dev/wp-admin/admin.php?page=facebook-feed-login&page-id=' . get_option('page-id') );
@@ -142,7 +142,6 @@ static function feeds_page() { ?>
 	static function page_add_instagram_feed() {
 		?>
 
-		<div class="wrap">
 
 
 			<h2>Add new feed</h2>
@@ -151,9 +150,9 @@ static function feeds_page() { ?>
 			if ( isset( $_POST['submit_feed'] ) ) {
 				?>
 				<pre>Saved into the DB!</pre> <?php
-				require_once __DIR__ . "/php/instagram-api/code.php";
+
 				?>
-				<a href="<?php echo $url ?>" target="_self"><?php _e( 'fetch instagram code ' ) ?></a>
+
 				<?php
 				if ( isset( $_GET['response_type'] ) ) {
 					echo $_GET['response_type'];
@@ -162,26 +161,28 @@ static function feeds_page() { ?>
 				// deklarerar lokalvariabler som tar information som begärs
 				$clientID     = preg_replace( '/\s+/', '', $_POST['client_id'] );
 				$clientSecret = preg_replace( '/\s+/', '', $_POST['client_secret'] );
-				$feedname     = $_POST['feed_name'];
-				$option       = "instagram_settings_" . sanitize_title( $feedname );
+				$option       = "instagram_settings";
+				//$checkup      = get_option('Instagram_values');
 
 
-				$array = array(
-					'client_id'     => $clientID,
-					'client_secret' => $clientSecret,
-					'feed_name'     => $feedname,
-					'code'          => $_GET['code'],
-					'hashtags'      => array( $_POST['tags'] )
-
-				);
-
-				// serialiserar värdena.
-				serialize( $array );
-
-				update_option( $option, $array );
+					$array = array(
+						'client_id'     => $clientID,
+						'client_secret' => $clientSecret,
+						'code'          => $_GET['code'],
 
 
-			}
+					);
+
+					// serialiserar värdena.
+					serialize( $array );
+
+					update_option( $option, $array );
+					require_once __DIR__ . "/php/instagram-api/code.php";
+				?> <a href="<?php echo $url ?>" target="_self"><?php _e( 'fetch instagram code ' ) ?></a>
+			<?php	}
+
+
+
 			?>
 
 
@@ -197,12 +198,6 @@ static function feeds_page() { ?>
 				<table class="form-table">
 
 
-					<!-- deklararerar namnet på själva feeden -->
-					<tr valign="top">
-						<th scope="row"><?php _e( 'Feed Name:', 'tibor' ) ?> </th>
-						<td><input type="text" name="feed_name"/>
-						</td>
-					</tr>
 
 
 					<!--Deklarerar KlientID't från developer-sidan-->
@@ -231,6 +226,29 @@ static function feeds_page() { ?>
 				<input type="submit" class="btn btn-prime" name="submit_feed" value="<?php _e( 'Save' ) ?>">
 
 			</form>
+
+		<div class="wrap">
+			<b>Database status:</b>
+			<p> Database status - Instagram JSON-results: <?php if(get_option('Instagram_results') == true){
+					echo 'The instagram JSON-results is now in the database!';
+				}
+				else {
+					echo 'The instagram JSON-results is not in the database...yet.';
+				}?> </p>
+			<p>Database status - Instagram settings: <?php if(get_option('instagram_settings') == true){
+				echo 'The Instagram settings is now in the database!';
+				}
+				else {
+					echo 'The instagram settings is not in the database...yet.';
+				}
+				?> </p>
+			<p id="igactoken"> Database status - Instagram access-token: <?php if(get_option('instagram-access-token') == true){
+				echo 'The Instagram access-token is now in the database!';
+				}
+				else {
+					echo 'The instagram access-token is not in the database...yet.';
+				}?></p>
+
 		</div>
 
 		<br>
@@ -304,6 +322,14 @@ static function feeds_page() { ?>
 				}
 
 			}
+			if( wp_remote_retrieve_response_code($response) !== 200 ) {
+
+				delete_options('instagram_settings');
+				delete_options('instagram-access-token');
+				delete_options('instagram_results');
+
+				?> <p> <?php echo "something went wrong. Please try again" ?> </p> <?php
+			}
 
 			?><p>Access-token fetched and saved in the db! <?php DWWP_social_media_plugin::get_json_IG() ?></p> <?php
 
@@ -333,7 +359,7 @@ static function feeds_page() { ?>
 				$video_url = $instagramInfo['videos']['standard_resolution']['url'];
 
 
-				 // instagram checkup on values.
+				// instagram checkup on values.
 
 				if ( $checkup === 'video' ) {
 					if ( $caption != null ) {
@@ -389,10 +415,19 @@ static function feeds_page() { ?>
 
 
 
-		echo "<pre>" . print_r( json_encode( $igArrays ) ) . "</pre>";
+		//echo "<pre>" . print_r( json_encode( $igArrays ) ) . "</pre>";
 
+
+
+/*
+		if(isempty(get_options('Instagram_results'))){
+			delete_option('instagram_settings');
+			delete_option('instagram-access-token');
+			delete_option('Instagram_results');
+			echo'test';
+
+		}*/
 	}
-
 
 	// settings-area of the plugin.
 
@@ -404,65 +439,61 @@ static function feeds_page() { ?>
 			<h2> Edit existing feed </h2>
 
 			<br>
-			<h4 id="rubrik"> Enter the feedname you wish to edit</h4>
+			<h4 id="rubrik"> Delete instagram feed?</h4>
 
+			<form action="" method="post">
+			<input type="hidden" name="igfeed" value="submit" />
+			<input id="" type="submit" name="submit" value="Delete Instagram feed">
+			</form>
 			<?php
-			$value = get_option( 'instagram_settings' );
-			foreach ($value as $X)
-			{
-				?> <p> <?php echo $X ?> </p> <?php
+			if(isset($_POST['igfeed'])) {
+				delete_option( 'instagram_settings' );
+				delete_option( 'instagram-access-token' );
+				delete_option( 'Instagram_results' );
+				echo "the values has now been deleted!";
 			}
-
+				if ( get_option( 'instagram_settings' ) == false || get_option( 'instagram-access-token' ) == false || get_option( 'Instagram_results' ) == false ) {
+					?>
+					<h4>    <?php echo 'there are no more Instagram values in the database that can be deleted!'; ?> </h4> <?php
+				}
 
 
 			?>
-
-			<select id="long">
-				<option> <?php echo $value['feed_name'] ?> </option>
-
-
-			</select>
-			<hr>
-			<br>
-			<!--Deklarerar KlientID't från developer-sidan-->
-
-			<h4 id="rubrik"> If you wish to update the client-ID: </h4>
-
-
-			<tr valign="top">
-				<th scope="row"></th>
-				<td><input name="client_id" id="client_id"/></td>
-			</tr>
-
-			<br>
-			<br>
-
-
-			<button id="button" onclick="update_access_token()">Update client-id</button>
 
 
 			<br><br>
 			<hr>
 
 
-
-
-
-
-
 			<!--Ta bort en feed-->
 			<h4 id="rubrik">Delete facebook-JSON-feed? </h4>
 
-			<form action="" method="post">
-				
-			<button id="facebookdeletebutton">Delete facebook-feed</button>
-		</form>
-			<?php if(isset($_GET["facebookdeletebutton"]))
-			{
-				delete_option('page-id'); delete_option('facebook-json-result'); delete_option('facebook-access-token');
 
-			echo 'deleted!';
-			} ?>
+			<form action="" method="post">
+				<input type="hidden" name="fbfeed" value="submit" />
+
+						<input id="" type="submit" name="submit" value="Delete Facebook feed">
+			</form>
+
+
+
+		<?php
+			if(isset($_POST['fbfeed'])){
+				delete_option('facebook-access-token');
+				delete_option('page-id');
+				delete_option('facebook-json-result');
+				echo 'The facebook values has now been deleted!';
+			}
+
+			if(get_option('facebook-access-token') == false || get_option('page-id') == false || get_option('facebook-json-result') == false){
+			?><h4>	<?php echo  'there are no more facebook values in the database that can be deleted!'; ?> </h4> <?php
+			}
+
+
+		?>
+
+
+
 
 			<br><br>
 
@@ -537,7 +568,7 @@ static function feeds_page() { ?>
 
 	<div class="wrap">
 
-		<?php if(isset($_POST['submit'])){
+		<?php if(isset($_POST['facebookJSONsubmit'])){
 
 			update_option('page-id', $_POST['page-id']);
 			wp_redirect(  'http://tibor.dev/wp-admin/admin.php?page=facebook-feed-login&page-id=' . get_option('page-id') );
@@ -679,7 +710,7 @@ static function feeds_page() { ?>
 				<form action="" method="post">
 					please enter the Page-ID: <input type="text" name="page-id"><br>
 
-					<input type="submit" name="submit">
+					<input type="submit" name="facebookJSONsubmit">
 
 				</form>
 				<?php
