@@ -1,16 +1,5 @@
-/*Gör att alla hashtags blir små*/
- div.tagsinput span.tag {
-    text-transform: lowercase !important
- ;
-}
- /*Arbetar med hashtagsen*/
- textarea {
-     background: url(images/benice.png) center center no-repeat; /* This ruins default border */
-     border: 1px solid #888;
-     width: 300px; min-height: 100px; height: 100px;
 
- }
- /*Informations-rutorna*/
+ /*Information-boxes */
  div.information {
 float: right;
      margin-right: 20px;
@@ -32,46 +21,30 @@ float: right;
      width: 350px;
  }
 
-h2.testar {
+ /*The css for the welcoming line. */
+#welcomeline {
     margin-left: 400px;
 }
-
+/*Info-line on the information box. */
  #info {
     margin-left: 20px;
      font-family: "Open Sans",sans-serif;
 
      font-size: 23px;
  }
+ /*Used on all the pages.*/
  div.wrap {
      float: left;
 
  }
-#rubrik {
+ /*line used for different information */
+#line {
     margin-left: 20px;
 }
-#long {
-    width: 500px;
-
-}
-
-#button {
-    margin-left: 150px;
-}
- #longhashtag {
-     width: 500px;
 
 
- }
 
- #feedCB {
-     margin-left: 35%;
-     width: 200px;
- }
- #specFeedRubrik {
-     margin-left: 25%
- }
-
-
+/*the welcome menu*/
 #welcomemenu {
     float: left;
     margin-left: 20px;
@@ -84,10 +57,12 @@ h2.testar {
     width: 500px;
 }
 
-#feed-welcome-rubrik {
+/*the welcome line.*/
+#feed-welcome-line {
     margin-left: 25%;
 }
 
+/*decorates text with an underline*/
 #underline {
     text-decoration: underline;
 }

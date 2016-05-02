@@ -9,8 +9,32 @@
  * Version: 0.0.1
  */
 
+
+
+/**
+ *                                          Information
+ * ------------------------------------------------------------------------------------------------------------------------
+ *                                      Database table-information:
+ *
+ *
+ *                                          INSTAGRAM
+ * - instagram-settings: stores client-id, client-secret and the code requested from the instagram API(NOT ACCESS TOKEN).
+ * - instagram--access-token: The returned access-token from the instagram API
+ * - instagram_results: The returned JSON-feed. The JSON-values specified is: Picture/video URL, Realdate (which converts unix timestamp to dd-mm-yyyy) and caption,
+ *  that takes a specific Instagram caption from a picture.
+ *
+ *                                          FACEBOOK
+ * -Page-ID: the users-specified facebook page-id is stored in this database-row.
+ * -facebook-access-token: the access token returned from the facebook-API is stored in this row.
+ * - facebook-json-result: The corresponding JSON-result from the facebook page is stored in this database-row.
+ *   the JSON-values that are specified is: the message, the facebook-link to the corresponding facebook-status, photos (if they are included in the status)
+ *   and the date in which the facebook-status is uploaded.
+ */
+
+
 // if not accessed by wordpress, you don't get permission to access the code.
 defined( 'ABSPATH' ) or die( 'Access denied' );
+
 
 
 class DWWP_social_media_plugin {
@@ -22,16 +46,12 @@ class DWWP_social_media_plugin {
 		add_action( 'admin_init', array( __CLASS__, 'register_feed_settings' ) );
 
 
-
-		//add_action( 'admin_enqueue_scripts', array( __CLASS__, 'admin_repository' ) );
-		// connects the fb api
-
 		add_action('admin_enqueue_scripts', array(__CLASS__, 'style'));
 
 		add_action( 'init', array( __CLASS__, 'myStartSession' ), 1 );
 		add_action( 'wp_logout', array( __CLASS__, 'myEndSession' ) );
 		add_action( 'wp_login', array( __CLASS__, 'myEndSession' ) );
-
+		// redirects facebook.
 		add_action('admin_init', array(__CLASS__, 'redirect_facebook'));
 
 	}
@@ -47,39 +67,28 @@ class DWWP_social_media_plugin {
 		}
 	}
 
+
 	static function style(){
 		wp_enqueue_style('style', plugin_dir_url(__FILE__) . '/style.css');
 	}
 
-	static function admin_repository() {
-		wp_enqueue_script( 'repository', plugin_dir_url( __FILE__ ) . '/js/repository.js' );
-	}
 
 
 	// declares the plugin-menu and submenus.
 	static function create_plugin_menu() {
-
-
-		//create new top-level menu
+		//create new top-level menu with a dashicon.
 		add_menu_page( 'Social-media-plugin', 'Feeds', 'administrator', 'social-media-feeds', array(
-			__CLASS__,
-			'feeds_page'
-		), do_shortcode( '
-dashicons-share' ) );
+			__CLASS__, 'feeds_page'), do_shortcode( 'dashicons-share' ) );
 
 		add_submenu_page( 'social-media-feeds', 'Add new instagram feed', 'Add new instagram feed', 'administrator', 'social-media-instagram-feed', array(
-			__CLASS__, 'page_add_instagram_feed')
-		);
+			__CLASS__, 'page_add_instagram_feed') );
 
 		add_submenu_page( 'social-media-feeds', 'Edit-existing-feed', 'Edit existing feed', 'administrator', 'edit-feed', array(
-			__CLASS__, 'page_edit_feed')
-		);
+			__CLASS__, 'page_edit_feed') );
 
 
 		add_submenu_page ('social-media-feeds', 'Facebook-feed-login', 'Facebook feed login', 'administrator', 'facebook-feed-login', array (
-			__CLASS__, 'page_facebook_feed'
-
-		) );
+			__CLASS__, 'page_facebook_feed' ) );
 
 	}
 
@@ -105,40 +114,47 @@ dashicons-share' ) );
 	}
 
 
-	//start-page.
 static function feeds_page() { ?>
+<!-- This is the start page from the social-media feed. This section doesn't include any functionality more than html-code.-->
+	<h2 id="welcomeline"> Welcome to social media-feeds plugin. </h2>
 
-	<h2 class="testar"> Welcome to social media-feeds plugin. </h2>
 	<hr>
-		<div id = "welcomemenu">
-			<h3 id ="feed-welcome-rubrik"> Instagram feeds.</h3>
-		<p> This plugin connects a specific social media, and converts it to JSON-text. To start using this plugin, please select a submenu that corresponds to what you want to convert to JSON-text. </p>
+
+	<div id = "welcomemenu">
+
+			<h3 id ="feed-welcome-line"> Instagram feeds.</h3>
+					<p> This plugin connects a specific instagram account, and converts it to JSON-text. </p>
+
 			<h4> Add new Instagram Feed.</h4>
-			<p> To convert Instagram feeds to JSON-text, you need to have access to your instagrams client ID and client secret.
-				Simply copy and paste this information to the respective fields on the Instagram submenu-page.
-				You can name the feed anything you want, the JSON-information and data about access-tokens will be saved in the database. </p>
+					<p> To convert Instagram feeds to JSON-text, you need to have access to your instagrams client ID and client secret.
+						Simply copy and paste this information to the respective fields on the Instagram submenu-page.
+						You can name the feed anything you want, the JSON-information and data about access-tokens will be saved in the database. </p>
 
-				<h4> Edit a instagram-feed.</h4>
-
-			<p> If you wish to update a instagram-client, you can simply do it by accessing the edit-instagram submenu-page. There are support for deleting the feed or updating the client id if it should expire. </p>
-
-		</div>
-<div id= "welcomemenu">
-	<h3 id ="feed-welcome-rubrik"> Facebook feeds. </h3>
-
-	<p> like the instagram json-feed, the ...</p>
-	<h4> Add new Facebook feed.</h4>
-	<p> will change when included</p>
-	<h4> Edit a Facebook-feed</h4>
-	<p> will change when included</p>
-
-	<div >
+			<h4> Edit a instagram-feed.</h4>
+					<p> If the feed has expired or you need to change the feed that are specified in the database,
+						you can simply navigate to the edit-feed section and delete it.</p>
 
 	</div>
+
+
+	<div id= "welcomemenu">
+		<h3 id ="feed-welcome-line"> Facebook feeds. </h3>
+					<p> Like the instagram JSON-feed, the facebook feed connects the user to a specific page that they are an administrator of.</p>
+
+		<h4> Add new Facebook feed.</h4>
+					<p> To convert the facebook page-feed, first of all, you need to authenticate your facebook profile.
+						if the profile is successfully authenticated, a text-field should pop up where it asks you to enter the page-ID.
+						The Page-id can be found at the bottom in the about-section of the page you administrate, and is usually a number.
+
+		<h4> Edit a Facebook-feed</h4>
+					<p> If you wish to delete the facebook-feed, you simply navigate to the edit-feed section and press the corresponding button.</p>
+
+
 
 </div>
 <?php }
 
+// This is the page that lets people add instagram feeds.
 	static function page_add_instagram_feed() {
 		?>
 
@@ -149,6 +165,7 @@ static function feeds_page() { ?>
 			DWWP_social_media_plugin::fetch_access_token();
 			if ( isset( $_POST['submit_feed'] ) ) {
 				?>
+				<!-- This messages pops up when the client id and client secret are saved in the database.  -->
 				<pre>Saved into the DB!</pre> <?php
 
 				?>
@@ -158,11 +175,12 @@ static function feeds_page() { ?>
 					echo $_GET['response_type'];
 				}
 
-				// deklarerar lokalvariabler som tar information som begärs
+
+				// declares the local variables that saves the information in the database under instagram-settings.
 				$clientID     = preg_replace( '/\s+/', '', $_POST['client_id'] );
 				$clientSecret = preg_replace( '/\s+/', '', $_POST['client_secret'] );
 				$option       = "instagram_settings";
-				//$checkup      = get_option('Instagram_values');
+
 
 
 					$array = array(
@@ -173,11 +191,13 @@ static function feeds_page() { ?>
 
 					);
 
-					// serialiserar värdena.
+					// serializes the values.
 					serialize( $array );
 
 					update_option( $option, $array );
 					require_once __DIR__ . "/php/instagram-api/code.php";
+
+				// if everything works as it should pop up a link after the user-inputted values have been saved that requests the access token from the instagram API.
 				?> <a href="<?php echo $url ?>" target="_self"><?php _e( 'fetch instagram code ' ) ?></a>
 			<?php	}
 
@@ -200,15 +220,15 @@ static function feeds_page() { ?>
 
 
 
-					<!--Deklarerar KlientID't från developer-sidan-->
+					<!--Declares and creates the client-id field. -->
 					<tr valign="top">
-						<th scope="row"><?php _e( 'Client ID:', 'tibor' ) ?></th>
+						<th scope="row"><?php _e( 'Client ID:', 'instagram' ) ?></th>
 						<td><input type="text" name="client_id"/></td>
 					</tr>
 
-					<!-- deklarerar Klient-secret-koden från developer-sidan-->
+					<!-- Declares and creates the Client-secret field.-->
 					<tr valign="top">
-						<th scope="row"><?php _e( 'Client Secret:', 'tibor' ) ?></th>
+						<th scope="row"><?php _e( 'Client Secret:', 'instagram' ) ?></th>
 						<td><input type="text" name="client_secret"
 							/></td>
 					</tr>
@@ -222,12 +242,13 @@ static function feeds_page() { ?>
 				<br>
 				<br>
 
-				<!--if-sats som sparar värdena -->
+				<!-- Input that saves the values specified in the instagram page-->
 				<input type="submit" class="btn btn-prime" name="submit_feed" value="<?php _e( 'Save' ) ?>">
 
 			</form>
 
 		<div class="wrap">
+			<!--This is a simple check-up that checks if there are values stored in the database, and gives a corresponding message. -->
 			<b>Database status:</b>
 			<p> Database status - Instagram JSON-results: <?php if(get_option('Instagram_results') == true){
 					echo 'The instagram JSON-results is now in the database!';
@@ -252,13 +273,14 @@ static function feeds_page() { ?>
 		</div>
 
 		<br>
+		<!-- hooks in the DWWP_instagram_api function -->
 		<?php DWWP_social_media_plugin::DWWP_instagram_api(); ?>
 
-		<!-- informations-box -->
+		<!-- a simple css-information box. -->
 		<div class="information">
 
 			<h2 id="info"> Information </h2>
-			<hr>
+				<hr>
 
 			<h3> You can find the instagram json in the table "instagram-values".</h3>
 			<h4> How to use Client ID and Client Secrets</h4>
@@ -277,12 +299,14 @@ static function feeds_page() { ?>
 		</div>
 	<?php }
 
+	// corresponds with the instagram api and fetches the access-token.
 	static function fetch_access_token() {
 		include( '/php/instagram-api/access_token.php' );
 		?><?php
 	}
 
-	//instagram-feed thats added in the system.
+
+	// this function takes the user-stored instagram values and uses this information to send a request for an access-token.
 	static function DWWP_instagram_api() {
 
 		// if the response code from instagram is accessable, start the method
@@ -308,12 +332,12 @@ static function feeds_page() { ?>
 					'redirect_uri'  => 'http://tibor.dev/wp-admin/admin.php?page=social-media-instagram-feed'
 				)
 			);
-			// specifies how to get the access-token.
+			// specifies where to get the access-token.
 			$url      = 'https://api.instagram.com/oauth/access_token';
 			// takes the array and posts it in the url.
 			$response = wp_remote_post( $url, $args );
 
-
+			// If the instagram site responds correctly, then the access-token is saved.
 			if ( wp_remote_retrieve_response_code( $response ) === 200 ) {
 				$body = wp_remote_retrieve_body( $response );
 				$body = json_decode( $body );
@@ -322,6 +346,7 @@ static function feeds_page() { ?>
 				}
 
 			}
+			// validation, if it's not responding with code 200, the rest of the information is deleted.
 			if( wp_remote_retrieve_response_code($response) !== 200 ) {
 
 				delete_options('instagram_settings');
@@ -339,16 +364,14 @@ static function feeds_page() { ?>
 
 	}
 
-
-	// hämtar hem jsontext från webbklienten
-
+			// Access the json-text from the web-client into a new database row.
 	static function get_json_IG() {
 		$access_token             = get_option( 'instagram-access-token' );
 		$get_json_text_ig         = 'https://api.instagram.com/v1/users/self/media/recent/?access_token=' . $access_token;
 		$list_of_json_stuff       = file_get_contents( $get_json_text_ig );
 		$get_json_text_ig_decoded = json_decode( $list_of_json_stuff, true );
 
-
+		// loop that access each individual value in the JSON-text.
 		foreach ( $get_json_text_ig_decoded as $value ) {
 			foreach ( $value as $instagramInfo ) {
 				$caption   = $instagramInfo ['caption']['text'];
@@ -359,7 +382,7 @@ static function feeds_page() { ?>
 				$video_url = $instagramInfo['videos']['standard_resolution']['url'];
 
 
-				// instagram checkup on values.
+				// Checkup that checks video or image JSON-value, and if there is a caption or not.
 
 				if ( $checkup === 'video' ) {
 					if ( $caption != null ) {
@@ -398,40 +421,34 @@ static function feeds_page() { ?>
 
 			}
 
-		} //här slutar loop.
+		} //where the loop ends.
 
 
 		$instagramResults = "Instagram_results";
 
-
+		// merging the image and video array.
 		$igArrays = array_merge( $imageSetting, $videoSetting );
 
+		// sorts the date.
 		usort( $igArrays, function ( $a, $b ) {
 			return $b['realdate'] - $a['realdate'];
 		} );
 
-
+		// saves the database.
 		update_option( $instagramResults, $igArrays );
 
 
 
-		//echo "<pre>" . print_r( json_encode( $igArrays ) ) . "</pre>";
 
 
 
-/*
-		if(isempty(get_options('Instagram_results'))){
-			delete_option('instagram_settings');
-			delete_option('instagram-access-token');
-			delete_option('Instagram_results');
-			echo'test';
 
-		}*/
 	}
 
 	// settings-area of the plugin.
 
 
+		//the page which allows users to delete a feed.
 	static function page_edit_feed() {
 		?>
 
@@ -439,19 +456,21 @@ static function feeds_page() { ?>
 			<h2> Edit existing feed </h2>
 
 			<br>
-			<h4 id="rubrik"> Delete instagram feed?</h4>
+			<h4 id="line"> Delete instagram feed?</h4>
 
 			<form action="" method="post">
 			<input type="hidden" name="igfeed" value="submit" />
 			<input id="" type="submit" name="submit" value="Delete Instagram feed">
 			</form>
 			<?php
+			// deletes the instagram values that are saved in the database.
 			if(isset($_POST['igfeed'])) {
 				delete_option( 'instagram_settings' );
 				delete_option( 'instagram-access-token' );
 				delete_option( 'Instagram_results' );
 				echo "the values has now been deleted!";
 			}
+					// if there are no more values in the database, a message will be outputted on the screen.
 				if ( get_option( 'instagram_settings' ) == false || get_option( 'instagram-access-token' ) == false || get_option( 'Instagram_results' ) == false ) {
 					?>
 					<h4>    <?php echo 'there are no more Instagram values in the database that can be deleted!'; ?> </h4> <?php
@@ -465,8 +484,8 @@ static function feeds_page() { ?>
 			<hr>
 
 
-			<!--Ta bort en feed-->
-			<h4 id="rubrik">Delete facebook-JSON-feed? </h4>
+
+			<h4 id="line">Delete facebook-JSON-feed? </h4>
 
 
 			<form action="" method="post">
@@ -478,6 +497,7 @@ static function feeds_page() { ?>
 
 
 		<?php
+		// deletes the facebookfeed from the database.
 			if(isset($_POST['fbfeed'])){
 				delete_option('facebook-access-token');
 				delete_option('page-id');
@@ -568,6 +588,7 @@ static function feeds_page() { ?>
 
 	<div class="wrap">
 
+		<!-- Posts the information specified on the page-id and accesses the json-feed. -->
 		<?php if(isset($_POST['facebookJSONsubmit'])){
 
 			update_option('page-id', $_POST['page-id']);
@@ -603,8 +624,8 @@ static function feeds_page() { ?>
 
 		<?php
 
-			// works with the facebook-page.
 
+			// imports the facebook api.
 		include_once __DIR__ . '/facebook-php-sdk-v4-master/src/Facebook/autoload.php';
 
 		$facebook_app_id     = '991325357570427';
@@ -657,7 +678,7 @@ static function feeds_page() { ?>
 									}
 
 
-									if ( $item['message'] == 'h' ) {
+									if ( $item['message'] == null) {
 										break;
 									}
 									$FBarray[] = array(
@@ -672,7 +693,7 @@ static function feeds_page() { ?>
 
 								}
 							}
-
+								//updates the option.
 							update_option( 'facebook-json-result', $FBarray );
 
 							die();
